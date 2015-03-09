@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Simple Map</title>
+		<meta name="viewport" content="initial-scale=1.0, user-scalable=yes">
+		<meta charset="utf-8">
+		<style>
+			html, body, #map-canvas {
+				height: 100%;
+				margin: 0px;
+				padding: 0px
+			}
+		</style>
+		<!--<script src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCo77VeSvHv7Vkv0oseeZuRGqbwbPZOzQQ&v=3.exp&sensor=true"></script>-->
+		<script src="http://ditu.google.cn/maps/api/js?key=AIzaSyCo77VeSvHv7Vkv0oseeZuRGqbwbPZOzQQ&sensor=true"></script>
+		<script src="infobubble.js"></script>
+		<script>
+			var map;
+			var markers;
+			var polylines;
+			var infoBubble;
+			function initialize() {
+				var mapOptions = {
+					zoom : 3,
+					//center : new google.maps.LatLng(36, 104),
+					disableDefaultUI: true,
+					zoomControl : true,
+					zoomControlOptions : {
+						style : google.maps.ZoomControlStyle.SMALL,
+						position: google.maps.ControlPosition.RIGHT_BOTTOM
+					}
+				};
+
+				map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+				infoBubble = new InfoBubble({
+          			maxWidth: 400,
+          			borderRadius: 2,
+          			borderWidth: 0,
+          			arrowSize: 8,
+          			shadowStyle: 0,
+          			hideCloseButton: true,
+        		});
+				markers = new HashMap();
+				polylines = new HashMap();
+
+				google.maps.event.addListener(map, 'click', function(e) {
+					console.log("onMapClick");
+					JsInterface.onMapClick(e.latLng.lat(), e.latLng.lng());
+				});
+
+				// google.maps.event.addListener(map, 'dblclick', function(e) {
+				// console.log("onMapLongClick");
+				// JsInterface.onMapLongClick(e.latLng.lat(), e.latLng.lng());
+				// });
+
+				var bounds = {
+					sw : {
+						lat : 18.25,
+						lng : 74
+					},
+					ne : {
+						lat : 53.5,
+						lng : 134.5
+					}
+				};
+
+				// map.panToBounds(bounds);
+
+				JsInterface.onMapLoadedCallback();
+			}
+
+
+			google.maps.event.addDomListener(window, 'load', initialize);
+
+			function placeMarker(position, map) {
+				var marker = new google.maps.Marker({
+					position : position,
+					map : map
+				});
+				map.panTo(position);
+			}
+
+			function sayHello() {
+				console.log('Hello');
+			}
+
+			function setCenter(position) {
+				map.panTo(position);
+			}
+
+			function setBounds(bounds) {
+				console.log(bounds);
+				map.panToBounds(bounds);
+			}
+
+			function setZoom(zoom) {
+				map.setZoom(zoom);
+			}
+
+			/***********for markers****************/
+			function addMarker(tag, options) {
+				options.map = map;
+				var marker = new google.maps.Marker(options);
+
+				google.maps.event.addListener(marker, 'dragstart', function(e) {
+					console.log("onMarkerDragStart");
+					JsInterface.onMarkerDragStart(tag, e.latLng.lat(), e.latLng.lng());
+				});
+
+				google.maps.event.addListener(marker, 'drag', function(e) {
+					console.log("onMarkerDrag");
+					JsInterface.onMarkerDrag(tag, e.latLng.lat(), e.latLng.lng());
+				});
+
+				google.maps.event.addListener(marker, 'dragend', function(e) {
+					console.log("onMarkerDragEnd");
+					JsInterface.onMarkerDragEnd(tag, e.latLng.lat(), e.latLng.lng());
+				});
+
+				google.maps.event.addListener(marker, 'click', function(e) {
+					console.log("onMarkerClick");
+					JsInterface.onMarkerClick(tag);
+				});
+
+				markers.put(tag, marker);
+				map.panTo(options.position);
+			}
+
+			function removeMarker(tag) {
+				var marker = markers.get(tag);
+				if (null != marker) {
+					marker.setMap(null);
+				}
+			}
+
+			function setMarkerPosition(tag, position) {
+				console.log("setMarkerPosition: " + position.lat + ", " + position.lng);
+				var marker = markers.get(tag);
+				if (null != marker) {
+					console.log("find marker");
+					if (null == marker.getMap()) {
+						marker.setMap(map);
+					}
+					marker.setPosition(position);
+				}
+			}
+
+			function setMarkerClickable(tag, flag) {
+				var marker = markers.get(tag);
+				if (null != marker) {
+					marker.setClickable(flag);
+				}
+			}
+
+			function setMarkerDraggable(tag, flag) {
+				var marker = markers.get(tag);
+				if (null != marker) {
+					marker.setDraggable(flag);
+				}
+			}
+
+			function setMarkerFlat(tag, flag) {
+				var marker = markers.get(tag);
+				if (null != marker) {
+					marker.setFlat(flag);
+				}
+			}
+
+			function setMarkerVisible(tag, flag) {
+				var marker = markers.get(tag);
+				if (null != marker) {
+					marker.setVisible(flag);
+				}
+			}
+
+			function setMarkerTitle(tag, flag) {
+				var marker = markers.get(tag);
+				if (null != marker) {
+					marker.setTitle(flag);
+				}
+			}
+
+			function addPolyline(tag, options) {
+				var path = [];
+				for (var i in options.path) {
+					path.push(new google.maps.LatLng(options.path[i].lat, options.path[i].lng));
+				}
+				options.path = path;
+
+				options.strokeColor = options.strokeColor;
+				options.strokeOpacity = options.strokeOpactiy;
+				options.strokeWeight = options.strokeWeight;
+				var flightPath = new google.maps.Polyline(options);
+				polylines.put(tag, flightPath);
+				flightPath.setMap(map);
+			}
+
+			function removePolyline(tag) {
+				var polyline = polylines.get(tag);
+				if (null != polyline) {
+					polyline.setMap(null);
+				}
+			}
+
+			function setPolylinePoints(tag, points) {
+				var polyline = polylines.get(tag);
+				if (null != polyline) {
+					var path = [];
+					for (var i in points) {
+						path.push(new google.maps.LatLng(points[i].lat, points[i].lng));
+					}
+					polyline.setPath(path);
+				}
+			}
+
+			function setPolylineVisible(tag, flag) {
+				var polyline = polylines.get(tag);
+				if (null != polyline) {
+					polyline.setVisible(flag);
+				}
+			}
+
+			/***********for infoWindow****************/
+			function showInfoWindow(markerTag, options) {
+				var marker = markers.get(markerTag);
+				if (null != marker) {
+					options = options || {};
+					options['disableAutoPan'] = true;
+					infoBubble.setOptions(options);
+					infoBubble.open(map, marker);
+				}
+			}
+			
+			function hideInfoWindow() {
+				infoBubble.close();
+			}
+			
+
+			// function getMarkerPosition(tag, interfaceName) {
+			// var marker = markers.get(tag);
+			//
+			// if (null != marker) {
+			// return Android.onReturnPosition(tag, marker.getPosition().lat(), marker.getPosition().lng());
+			// }
+			// return Android.onReturnPosition(tag, 0, 0);
+			// }
+			//
+			// function getMarkerClickable(tag) {
+			// var marker = markers.get(tag);
+			// if (null != marker) {
+			// return marker.getClickable();
+			// }
+			// return false;
+			// }
+			//
+			// function getMarkerDraggable(tag) {
+			// var marker = markers.get(tag);
+			// if (null != marker) {
+			// return marker.getDraggable();
+			// }
+			// return false;
+			// }
+			//
+			// function getMarkerFlat(tag) {
+			// var marker = markers.get(tag);
+			// if (null != marker) {
+			// return marker.getFlat();
+			// }
+			// return false;
+			// }
+			//
+			// function getMarkerVisible(tag) {
+			// var marker = markers.get(tag);
+			// if (null != marker) {
+			// return marker.getVisible();
+			// }
+			// return false;
+			// }
+			//
+			// function getMarkerTitle(tag) {
+			// var marker = markers.get(tag);
+			// if (null != marker) {
+			// return marker.setTitle();
+			// }
+			// return null;
+			// }
+
+		</script>
+	</head>
+	<body>
+		<div id="map-canvas"></div>
+	</body>
+
+	<script>
+		function HashMap() {
+			var size = 0;
+			var entry = new Object();
+
+			this.contains = function(key) {
+				return ( key in entry);
+			};
+
+			this.put = function(key, value) {
+				if (!this.contains(key)) {
+					size++;
+				}
+				entry[key] = value;
+			};
+
+			this.get = function(key) {
+				if (this.contains(key)) {
+					return entry[key];
+				} else {
+					return null;
+				}
+			};
+
+			this.remove = function(key) {
+				if (
+				delete entry[key]) {
+					size--;
+				}
+			};
+
+			this.containsValue = function(value) {
+				for (var key in entry) {
+					if (entry[key] == value) {
+						return true;
+					}
+				}
+				return false;
+			};
+
+			this.keys = function() {
+				var keys = new Array(size);
+
+				for (var key in entry) {
+					keys.push(key);
+				}
+				return keys;
+			};
+
+			this.values = function() {
+				var values = new Array(size);
+
+				for (var key in entry) {
+					values.push(entry[key]);
+				}
+				return values;
+			};
+
+			this.size = function() {
+				return size;
+			};
+		}
+	</script>
+</html>

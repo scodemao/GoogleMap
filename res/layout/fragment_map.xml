@@ -1,0 +1,18 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/map_container"
+    android:layout_width="match_parent" android:background="#dddddd"
+    android:layout_height="match_parent" >
+
+    <fragment
+        android:id="@+id/native_map"
+        android:layout_width="match_parent" 
+        android:layout_height="match_parent"
+        class="com.chanyouji.android.map.NativeMapFragment" />
+
+    <fragment
+        android:id="@+id/web_map"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        class="com.chanyouji.android.map.WebMapFragment" />
+
+</FrameLayout>
